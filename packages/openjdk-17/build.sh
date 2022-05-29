@@ -10,7 +10,6 @@ TERMUX_PKG_DEPENDS="freetype, giflib, libandroid-shmem, libandroid-spawn, libico
 TERMUX_PKG_BUILD_DEPENDS="cups, fontconfig, libpng, libx11, libxrender"
 TERMUX_PKG_SUGGESTS="cups, fontconfig, libx11, libxrender"
 TERMUX_PKG_BUILD_IN_SRC=true
-TERMUX_PKG_HAS_DEBUG=false
 
 termux_step_pre_configure() {
 	unset JAVA_HOME
@@ -56,6 +55,12 @@ termux_step_pre_configure() {
 }
 
 termux_step_configure() {
+	if [ $TERMUX_DEBUG_BUILD = true ]; then
+		_BUILD_TYPE="fastdebug"
+	else
+		_BUILD_TYPE="release"
+	fi
+
 	local jdk_ldflags="-L${TERMUX_PREFIX}/lib -Wl,-rpath=$TERMUX_PREFIX/opt/openjdk/lib -Wl,-rpath=${TERMUX_PREFIX}/lib -Wl,--enable-new-dtags"
 	bash ./configure \
 		--openjdk-target=$TERMUX_HOST_PLATFORM \
@@ -68,7 +73,6 @@ termux_step_configure() {
 		--with-toolchain-type=gcc \
 		--with-jvm-variants=server \
 		--with-devkit="$TERMUX_STANDALONE_TOOLCHAIN" \
-		--with-debug-level=release \
 		--with-cups-include="$TERMUX_PREFIX/include" \
 		--with-fontconfig-include="$TERMUX_PREFIX/include" \
 		--with-freetype-include="$TERMUX_PREFIX/include/freetype2" \
@@ -80,6 +84,7 @@ termux_step_configure() {
 		--x-includes="$TERMUX_PREFIX/include/X11" \
 		--x-libraries="$TERMUX_PREFIX/lib" \
 		--with-x="$TERMUX_PREFIX/include/X11" \
+		--with-debug-level="${_BUILD_TYPE}"
 		AR="$AR" \
 		NM="$NM" \
 		OBJCOPY="$OBJCOPY" \
@@ -88,7 +93,7 @@ termux_step_configure() {
 }
 
 termux_step_make() {
-	cd build/linux-${TERMUX_ARCH/i686/x86}-server-release
+	cd build/linux-${TERMUX_ARCH/i686/x86}-server-$_BUILD_TYPE
 	make JOBS=1 images
 
 	# Delete created library stubs.
@@ -98,7 +103,7 @@ termux_step_make() {
 termux_step_make_install() {
 	rm -rf $TERMUX_PREFIX/opt/openjdk
 	mkdir -p $TERMUX_PREFIX/opt/openjdk
-	cp -r build/linux-${TERMUX_ARCH/i686/x86}-server-release/images/jdk/* \
+	cp -r build/linux-${TERMUX_ARCH/i686/x86}-server-${_BUILD_TYPE}/images/jdk/* \
 		$TERMUX_PREFIX/opt/openjdk/
 	find $TERMUX_PREFIX/opt/openjdk -name "*.debuginfo" -delete
 
