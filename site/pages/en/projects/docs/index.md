@@ -8,6 +8,7 @@ page_ref: "@PROJECTS__VARIANT@/termux/termux-packages/docs/@DOCS__VERSION@/index
 
 Welcome to documentation for [Termux Packages].
 
+- [Get started](get-started/index.md)
 ## &nbsp;
 
 &nbsp;
